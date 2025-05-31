@@ -1,6 +1,6 @@
 {
   "name": "My PWA App",
-  "short_name": "PWAApp",
+  "short_name": "PWA",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,11 +9,6 @@
     {
       "src": "settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png",
       "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png",
-      "sizes": "512x512",
       "type": "image/png"
     }
   ]
