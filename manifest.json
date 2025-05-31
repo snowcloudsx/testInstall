@@ -1,21 +1,20 @@
 {
   "name": "My PWA App",
-  "short_name": "PWA",
-  "start_url": "/testInstall/",
+  "short_name": "PWA App",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#317EFB",
- "icons": [
-  {
-    "src": "home_192dp_E3E3E3_FILL0_wght400_GRAD0_opsz48.png",
-    "sizes": "192x192",
-    "type": "image/png"
-  },
-  {
-    "src": "settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png",
-    "sizes": "24x24",
-    "type": "image/png"
-  }
-]
-
+  "icons": [
+    {
+      "src": "home_192dp_E3E3E3_FILL0_wght400_GRAD0_opsz48.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png",
+      "sizes": "24x24",
+      "type": "image/png"
+    }
+  ]
 }
