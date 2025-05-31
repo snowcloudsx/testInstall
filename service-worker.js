@@ -7,8 +7,8 @@ self.addEventListener("install", (e) => {
         "./index.html",
         "./main.js",
         "./manifest.json",
-        "./icons/icon-192x192.png",
-        "./icons/icon-512x512.png"
+        "./settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png"
+
       ]);
     })
   );
