@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Advanced Dark Browser</title>
+  <title>Advanced Dark Browser PWA</title>
+
+  <!-- PWA meta -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#121212" />
+  <meta name="description" content="Advanced Dark-Themed Multi-tab Browser as a PWA" />
+  
   <style>
     /* Dark theme base */
     body {
@@ -69,10 +75,6 @@
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       border: none; background: white;
     }
-    /* Scrollbar for url input (if needed) */
-    input::-webkit-calendar-picker-indicator {
-      display: none !important;
-    }
   </style>
 </head>
 <body>
@@ -101,22 +103,19 @@
     const goBtn = document.getElementById('goBtn');
     const newTabBtn = document.getElementById('newTabBtn');
 
-    // Tab and navigation data
     let tabs = [];
     let activeTabIndex = -1;
 
-    // Create a new tab object
     function createTab(url) {
       return {
         history: [url],
         historyIndex: 0,
         iframe: null,
         url: url,
-        title: 'New Tab'
+        title: url
       };
     }
 
-    // Render tabs UI
     function renderTabs() {
       tabsEl.innerHTML = '';
       tabs.forEach((tab, i) => {
@@ -143,7 +142,6 @@
       });
     }
 
-    // Switch active tab
     function switchTab(index) {
       if (index === activeTabIndex) return;
       if (activeTabIndex >= 0) {
@@ -157,15 +155,12 @@
       renderTabs();
     }
 
-    // Close a tab
     function closeTab(index) {
       if (tabs.length === 1) {
-        // If last tab, just reload blank page
         navigateInTab(index, 'about:blank');
         return;
       }
       const wasActive = index === activeTabIndex;
-      // Remove iframe
       browserContainer.removeChild(tabs[index].iframe);
       tabs.splice(index, 1);
       if (wasActive) {
@@ -177,13 +172,11 @@
       renderTabs();
     }
 
-    // Navigate current tab
     function navigateInTab(tabIndex, url) {
       let tab = tabs[tabIndex];
       if (!/^https?:\/\//i.test(url) && url !== 'about:blank') {
         url = 'https://' + url;
       }
-      // Trim forward history
       tab.history = tab.history.slice(0, tab.historyIndex + 1);
       tab.history.push(url);
       tab.historyIndex++;
@@ -195,14 +188,12 @@
       }
     }
 
-    // Update Back/Forward button states
     function updateNavButtons() {
       const tab = tabs[activeTabIndex];
       backBtn.disabled = tab.historyIndex <= 0;
       forwardBtn.disabled = tab.historyIndex >= tab.history.length - 1;
     }
 
-    // Go back in history
     function goBack() {
       const tab = tabs[activeTabIndex];
       if (tab.historyIndex > 0) {
@@ -214,7 +205,6 @@
       }
     }
 
-    // Go forward in history
     function goForward() {
       const tab = tabs[activeTabIndex];
       if (tab.historyIndex < tab.history.length - 1) {
@@ -226,20 +216,17 @@
       }
     }
 
-    // Reload current tab
     function reload() {
       const tab = tabs[activeTabIndex];
       tab.iframe.src = tab.url;
     }
 
-    // Handle Go button or enter key
     function onGo() {
       const url = urlInput.value.trim();
       if (!url) return;
       navigateInTab(activeTabIndex, url);
     }
 
-    // Create iframe element for a tab
     function createIframe(url) {
       const iframe = document.createElement('iframe');
       iframe.src = url;
@@ -249,35 +236,35 @@
       return iframe;
     }
 
-    // Open new tab
     function newTab(url = 'https://example.com') {
       const tab = createTab(url);
       tab.iframe = createIframe(url);
       tabs.push(tab);
-      if (activeTabIndex >= 0) {
-        tabs[activeTabIndex].iframe.style.display = 'none';
-      }
-      activeTabIndex = tabs.length - 1;
-      tab.iframe.style.display = 'block';
-      urlInput.value = url;
+      switchTab(tabs.length - 1);
       renderTabs();
-      updateNavButtons();
     }
 
-    // Initial setup
-    newTab();
-
-    // Event listeners
     backBtn.onclick = goBack;
     forwardBtn.onclick = goForward;
     reloadBtn.onclick = reload;
     goBtn.onclick = onGo;
     newTabBtn.onclick = () => newTab();
 
-    urlInput.addEventListener('keydown', (e) => {
+    urlInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') onGo();
     });
 
+    // Start with one tab
+    newTab();
+
+    // PWA Service Worker registration
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').then(() => {
+        console.log('Service Worker Registered');
+      }).catch(e => {
+        console.warn('Service Worker registration failed:', e);
+      });
+    }
   })();
 </script>
 
