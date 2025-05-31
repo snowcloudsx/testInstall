@@ -1,76 +1,285 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" >
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>My PWA App</title>
-
-<!-- Link to manifest (must be separate) -->
-<link rel="manifest" href="manifest.json" />
-
-<meta name="theme-color" content="#317EFB" />
-<link rel="icon" href="settings_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.png" />
-
-<style>
-  body {
-    font-family: sans-serif;
-    text-align: center;
-    padding: 2rem;
-    background: #f9f9f9;
-  }
-  #install-btn {
-    display: none;
-    padding: 1rem 2rem;
-    background: #317EFB;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  }
-  #install-btn:hover {
-    background: #255DCB;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced Dark Browser</title>
+  <style>
+    /* Dark theme base */
+    body {
+      margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #121212; color: #e0e0e0; height: 100vh; display: flex;
+      flex-direction: column;
+    }
+    #tabs {
+      display: flex; background: #1f1f1f; border-bottom: 1px solid #333;
+      overflow-x: auto; user-select: none;
+    }
+    #tabs::-webkit-scrollbar {
+      height: 6px;
+    }
+    #tabs::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 3px;
+    }
+    .tab {
+      padding: 0.5rem 1rem; cursor: pointer; background: #1f1f1f;
+      border-right: 1px solid #333; display: flex; align-items: center;
+      gap: 0.6rem; position: relative;
+      white-space: nowrap;
+    }
+    .tab.active {
+      background: #317EFB;
+      color: #fff;
+      font-weight: bold;
+    }
+    .tab .close-btn {
+      background: transparent; border: none; color: #bbb;
+      cursor: pointer; font-size: 1rem; line-height: 1; padding: 0;
+      position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+      opacity: 0.7;
+    }
+    .tab:hover .close-btn {
+      opacity: 1;
+    }
+    #nav {
+      background: #222; padding: 0.5rem; display: flex; gap: 0.5rem;
+      align-items: center;
+    }
+    #nav button {
+      background: #317EFB; border: none; color: white; padding: 0.5rem 1rem;
+      border-radius: 4px; cursor: pointer; font-weight: 600;
+      user-select: none;
+    }
+    #nav button:disabled {
+      background: #444; cursor: default;
+    }
+    #url {
+      flex-grow: 1; padding: 0.5rem 0.75rem; font-size: 1rem;
+      border-radius: 4px; border: none; background: #333; color: #eee;
+      outline-offset: -2px;
+    }
+    #url:focus {
+      outline: 2px solid #317EFB;
+    }
+    #browser-container {
+      flex-grow: 1; position: relative; background: #000;
+    }
+    iframe {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      border: none; background: white;
+    }
+    /* Scrollbar for url input (if needed) */
+    input::-webkit-calendar-picker-indicator {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome to My PWA App!</h1>
-  <p>This is a simple example website that can be installed like an app.</p>
-  <button id="install-btn">Install App</button>
 
-  <script>
-    // Service worker registration
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .then((reg) => console.log("Service Worker registered:", reg))
-        .catch((err) => console.error("Service Worker registration failed:", err));
+  <div id="tabs"></div>
+
+  <div id="nav">
+    <button id="backBtn" disabled title="Back">◀</button>
+    <button id="forwardBtn" disabled title="Forward">▶</button>
+    <button id="reloadBtn" title="Reload">⟳</button>
+    <input id="url" type="text" placeholder="Enter URL or search..." spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="none" />
+    <button id="goBtn" title="Go">Go</button>
+    <button id="newTabBtn" title="New Tab">＋</button>
+  </div>
+
+  <div id="browser-container"></div>
+
+<script>
+  (() => {
+    const tabsEl = document.getElementById('tabs');
+    const browserContainer = document.getElementById('browser-container');
+    const backBtn = document.getElementById('backBtn');
+    const forwardBtn = document.getElementById('forwardBtn');
+    const reloadBtn = document.getElementById('reloadBtn');
+    const urlInput = document.getElementById('url');
+    const goBtn = document.getElementById('goBtn');
+    const newTabBtn = document.getElementById('newTabBtn');
+
+    // Tab and navigation data
+    let tabs = [];
+    let activeTabIndex = -1;
+
+    // Create a new tab object
+    function createTab(url) {
+      return {
+        history: [url],
+        historyIndex: 0,
+        iframe: null,
+        url: url,
+        title: 'New Tab'
+      };
     }
 
-    // Install button logic
-    let deferredPrompt;
-    const installBtn = document.getElementById("install-btn");
+    // Render tabs UI
+    function renderTabs() {
+      tabsEl.innerHTML = '';
+      tabs.forEach((tab, i) => {
+        const tabEl = document.createElement('div');
+        tabEl.className = 'tab' + (i === activeTabIndex ? ' active' : '');
+        tabEl.textContent = tab.title || tab.url;
+        tabEl.title = tab.url;
+        tabEl.dataset.index = i;
 
-    window.addEventListener("beforeinstallprompt", (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      installBtn.style.display = "inline-block";
-    });
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'close-btn';
+        closeBtn.textContent = '×';
+        closeBtn.title = 'Close Tab';
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          closeTab(i);
+        };
+        tabEl.appendChild(closeBtn);
 
-    installBtn.addEventListener("click", () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === "accepted") {
-            console.log("User accepted the install prompt");
-          } else {
-            console.log("User dismissed the install prompt");
-          }
-          deferredPrompt = null;
-          installBtn.style.display = "none";
-        });
+        tabEl.onclick = () => {
+          switchTab(i);
+        };
+        tabsEl.appendChild(tabEl);
+      });
+    }
+
+    // Switch active tab
+    function switchTab(index) {
+      if (index === activeTabIndex) return;
+      if (activeTabIndex >= 0) {
+        tabs[activeTabIndex].iframe.style.display = 'none';
       }
+      activeTabIndex = index;
+      const tab = tabs[activeTabIndex];
+      tab.iframe.style.display = 'block';
+      urlInput.value = tab.url;
+      updateNavButtons();
+      renderTabs();
+    }
+
+    // Close a tab
+    function closeTab(index) {
+      if (tabs.length === 1) {
+        // If last tab, just reload blank page
+        navigateInTab(index, 'about:blank');
+        return;
+      }
+      const wasActive = index === activeTabIndex;
+      // Remove iframe
+      browserContainer.removeChild(tabs[index].iframe);
+      tabs.splice(index, 1);
+      if (wasActive) {
+        activeTabIndex = Math.min(index, tabs.length - 1);
+        switchTab(activeTabIndex);
+      } else if (index < activeTabIndex) {
+        activeTabIndex--;
+      }
+      renderTabs();
+    }
+
+    // Navigate current tab
+    function navigateInTab(tabIndex, url) {
+      let tab = tabs[tabIndex];
+      if (!/^https?:\/\//i.test(url) && url !== 'about:blank') {
+        url = 'https://' + url;
+      }
+      // Trim forward history
+      tab.history = tab.history.slice(0, tab.historyIndex + 1);
+      tab.history.push(url);
+      tab.historyIndex++;
+      tab.url = url;
+      tab.iframe.src = url;
+      updateNavButtons();
+      if (tabIndex === activeTabIndex) {
+        urlInput.value = url;
+      }
+    }
+
+    // Update Back/Forward button states
+    function updateNavButtons() {
+      const tab = tabs[activeTabIndex];
+      backBtn.disabled = tab.historyIndex <= 0;
+      forwardBtn.disabled = tab.historyIndex >= tab.history.length - 1;
+    }
+
+    // Go back in history
+    function goBack() {
+      const tab = tabs[activeTabIndex];
+      if (tab.historyIndex > 0) {
+        tab.historyIndex--;
+        tab.url = tab.history[tab.historyIndex];
+        tab.iframe.src = tab.url;
+        urlInput.value = tab.url;
+        updateNavButtons();
+      }
+    }
+
+    // Go forward in history
+    function goForward() {
+      const tab = tabs[activeTabIndex];
+      if (tab.historyIndex < tab.history.length - 1) {
+        tab.historyIndex++;
+        tab.url = tab.history[tab.historyIndex];
+        tab.iframe.src = tab.url;
+        urlInput.value = tab.url;
+        updateNavButtons();
+      }
+    }
+
+    // Reload current tab
+    function reload() {
+      const tab = tabs[activeTabIndex];
+      tab.iframe.src = tab.url;
+    }
+
+    // Handle Go button or enter key
+    function onGo() {
+      const url = urlInput.value.trim();
+      if (!url) return;
+      navigateInTab(activeTabIndex, url);
+    }
+
+    // Create iframe element for a tab
+    function createIframe(url) {
+      const iframe = document.createElement('iframe');
+      iframe.src = url;
+      iframe.sandbox = "allow-scripts allow-same-origin allow-forms allow-popups";
+      iframe.style.display = 'none';
+      browserContainer.appendChild(iframe);
+      return iframe;
+    }
+
+    // Open new tab
+    function newTab(url = 'https://example.com') {
+      const tab = createTab(url);
+      tab.iframe = createIframe(url);
+      tabs.push(tab);
+      if (activeTabIndex >= 0) {
+        tabs[activeTabIndex].iframe.style.display = 'none';
+      }
+      activeTabIndex = tabs.length - 1;
+      tab.iframe.style.display = 'block';
+      urlInput.value = url;
+      renderTabs();
+      updateNavButtons();
+    }
+
+    // Initial setup
+    newTab();
+
+    // Event listeners
+    backBtn.onclick = goBack;
+    forwardBtn.onclick = goForward;
+    reloadBtn.onclick = reload;
+    goBtn.onclick = onGo;
+    newTabBtn.onclick = () => newTab();
+
+    urlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') onGo();
     });
-  </script>
+
+  })();
+</script>
+
 </body>
 </html>
